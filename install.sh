@@ -6,6 +6,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+cat << "EOF"
+┳┓  ┓ •┏┓┏     ┏┓       
+┃┃┏┓┣┓┓┣┫╋╋┏┓┏┓┃┃┏┓┏┓╋┓┏
+┻┛┗ ┗┛┗┛┗┛┗┗ ┛ ┣┛┗┻┛ ┗┗┫
+                       ┛
+                       by alucod3
+EOF
+
 # Função para detectar a placa de vídeo
 detect_graphics_card() {
     echo "Detectando placa de vídeo..."
@@ -30,8 +38,7 @@ install_nvidia_drivers() {
 
         # Pré-requisitos e atualização do sistema
     echo "Instalando pré-requisitos e atualizando o sistema..."
-    apt update
-    apt upgrade -y
+    apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
     
     # Remoção de instalações anteriores (se necessário)
     echo "Removendo instalações anteriores do NVIDIA..."
@@ -49,23 +56,65 @@ install_nvidia_drivers() {
 # Função para instalar drivers AMD
 install_amd_drivers() {
     echo "Instalando drivers AMD..."
-    # Adicionar os comandos para instalação dos drivers AMD
+    
+    # Atualiza a lista de pacotes e atualiza o sistema
+    apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
+    
+    # Remoção de instalações anteriores (se necessário)
+    echo "Removendo instalações anteriores do AMD..."
+    # Exemplo genérico, ajuste conforme necessário
+    apt purge amd* -y
+    
+    # Instalação de pacotes necessários
+    echo "Instalando pacotes necessários..."
+    # Exemplo genérico, ajuste conforme necessário
+    apt install -y firmware-amd-graphics amdgpu-pro mesa-utils mesa-vdpau-drivers
+    
+    # Configurações adicionais se necessário (exemplo: kernel parameters)
+    # Exemplo genérico, ajuste conforme necessário
+    echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX amdgpu.runpm=0"' > /etc/default/grub.d/amdgpu-options.cfg
+    
+    update-grub
+}
+
+# Função para escolher se deseja instalar via Flatpak
+choose_flatpak_installation() {
+    while true; do
+        read -p "Deseja instalar aplicativos via Flatpak? (S/N): " choice
+        case "$choice" in
+            [Ss]* )
+                apt install flatpak -y
+                flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+                break
+                ;;
+            [Nn]* )
+                echo "Você optou por não instalar via Flatpak."
+                break
+                ;;
+            * )
+                echo "Por favor, responda com S (Sim) ou N (Não)."
+                ;;
+        esac
+    done
 }
 
 # Variáveis de configuração
 LV_BRANCH='release-1.4/neovim-0.9'
 DROID_FONT_URL='https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/DroidSansMNerdFont-Regular.otf'
 JETBRAINS_FONT_URL='https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/JetBrainsMono/JetBrains%20Mono%20Nerd%20Font%20Complete.otf'
-GO_DOWNLOAD_URL='https://go.dev/dl/go1.22.4.linux-amd64.tar.gz'
 
 # Início da mensagem de carregamento
 echo "Iniciando instalação..."
 
 # Atualiza a lista de pacotes e atualiza o sistema
-apt update && apt upgrade -y
+apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
 
 # Verifica e instala os drivers de vídeo conforme necessário
 detect_graphics_card
+
+echo "============"
+echo "|  Basics  |"
+echo "============"
 
 # Instala ferramentas básicas
 apt install -y \
@@ -76,23 +125,30 @@ apt install -y \
     software-properties-common \
     apt-transport-https \
     ca-certificates \
-    gnupg-agent \
-    build-essential
+    gnupg-agent
 
-# Baixa e instala a versão mais recente do Go
-curl -LO "$GO_DOWNLOAD_URL"
-tar -C /usr/local -xzf go*.linux-amd64.tar.gz
-rm go*.linux-amd64.tar.gz
+echo "====================="
+echo "|  Go Lang + C/C++  |"
+echo "====================="
+
+apt install -y \
+    build-essential \
+    golang \
 
 # Configuração das variáveis de ambiente para Go
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.profile
-source ~/.profile
+export GOPATH="$HOME/go"
+export PATH="$GOPATH/bin:$PATH"
 
-# Instalações via flatpak
-flatpak install flathub com.bitwarden.desktop
+echo "======================="
+echo "|  i3 + Dependencies  |"
+echo "======================="
 
 # Instalação do i3 e dependências
 apt install -y i3 i3status i3lock xbacklight feh
+
+echo "==============================="
+echo "|  NeoVim + LunarVim + Fonts  |"
+echo "==============================="
 
 # Instalação do Neovim e LunarVim
 curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
@@ -113,17 +169,36 @@ cd ~/.local/share/fonts && {
 # Atualiza o cache de fontes
 fc-cache -f -v
 
-# Limpeza e finalização
-apt autoremove -y
-apt clean
+echo "====================="
+echo "|  Zsh + Oh My Zsh  |"
+echo "====================="
 
 # Instalação do Zsh e Oh My Zsh
 apt install -y zsh curl git
 sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
+# Limpeza e finalização
+apt update && apt upgrade && apt autoremove -y
+apt clean
+
 # Define o Zsh como o shell padrão para o usuário atual
-# chsh -s $(which zsh)
+chsh -s $(which zsh)
 
 # Fim da instalação
 echo "Instalação concluída. Por favor, faça logout e login novamente para aplicar as alterações do Zsh e Neovim."
-
+    while true; do
+        read -p "Recomendamos que reinicie para aplicar efeito na placa de vídeo. Deseja reiniciar? (S/N): " choice
+        case "$choice" in
+            [Ss]* )
+                reboot
+                break
+                ;;
+            [Nn]* )
+                echo "Você optou por não reiniciar."
+                break
+                ;;
+            * )
+                echo "Por favor, responda com S (Sim) ou N (Não)."
+                ;;
+        esac
+    done
