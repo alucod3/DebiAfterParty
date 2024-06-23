@@ -1,81 +1,95 @@
 #!/bin/bash
 
+# Funções de cores
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Verifica se o script está sendo executado como root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Este script precisa ser executado como root. Por favor, execute-o com sudo."
+    echo -e "${RED}Este script precisa ser executado como root. Por favor, execute-o com sudo.${NC}"
     exit 1
 fi
 
-cat << "EOF"
+# Função para imprimir ASCII art colorido
+print_ascii_art() {
+    echo -e "${CYAN}"
+    cat << "EOF"
 ┳┓  ┓ •┏┓┏     ┏┓       
 ┃┃┏┓┣┓┓┣┫╋╋┏┓┏┓┃┃┏┓┏┓╋┓┏
 ┻┛┗ ┗┛┗┛┗┛┗┗ ┛ ┣┛┗┻┛ ┗┗┫
                        ┛
                        by alucod3
 EOF
+    echo -e "${NC}"
+}
+
+# Imprime ASCII art
+print_ascii_art
 
 # Função para detectar a placa de vídeo
 detect_graphics_card() {
-    echo "Detectando placa de vídeo..."
+    echo -e "${GREEN}Detectando placa de vídeo...${NC}"
     if lspci | grep -i 'nvidia\|amd' > /dev/null; then
         if lspci | grep -i 'nvidia' > /dev/null; then
-            echo "Placa NVIDIA detectada."
+            echo -e "${GREEN}Placa NVIDIA detectada.${NC}"
             install_nvidia_drivers
         elif lspci | grep -i 'amd' > /dev/null; then
-            echo "Placa AMD detectada."
+            echo -e "${GREEN}Placa AMD detectada.${NC}"
             install_amd_drivers
         else
-            echo "Placa de vídeo detectada, mas não é NVIDIA nem AMD."
+            echo -e "${YELLOW}Placa de vídeo detectada, mas não é NVIDIA nem AMD.${NC}"
         fi
     else
-        echo "Nenhuma placa de vídeo NVIDIA ou AMD detectada."
+        echo -e "${YELLOW}Nenhuma placa de vídeo NVIDIA ou AMD detectada.${NC}"
     fi
 }
 
 # Função para instalar drivers NVIDIA
 install_nvidia_drivers() {
-    echo "Instalando drivers NVIDIA..."
+    echo -e "${GREEN}Instalando drivers NVIDIA...${NC}"
 
-        # Pré-requisitos e atualização do sistema
-    echo "Instalando pré-requisitos e atualizando o sistema..."
-    apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
-    
+    # Pré-requisitos e atualização do sistema
+    echo -e "${GREEN}Instalando pré-requisitos e atualizando o sistema...${NC}"
+    apt update && apt upgrade -y || { echo -e "${RED}Erro ao atualizar pacotes. Abortando.${NC}" >&2; exit 1; }
+
     # Remoção de instalações anteriores (se necessário)
-    echo "Removendo instalações anteriores do NVIDIA..."
+    echo -e "${GREEN}Removendo instalações anteriores do NVIDIA...${NC}"
     apt purge nvidia* -y
-    
+
     # Instalação de pacotes necessários
-    echo "Instalando pacotes necessários..."
+    echo -e "${GREEN}Instalando pacotes necessários...${NC}"
     apt install -y nvidia-driver firmware-misc-nonfree nvidia-cuda-dev nvidia-cuda-toolkit
-    
+
     echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX nvidia-drm.modeset=1"' > /etc/default/grub.d/nvidia-modeset.cfg
-    
+
     update-grub
 }
 
-# Função para instalar drivers AMD
+# Função para instalar drivers AMD (PRECISA AJUSTAR)
 install_amd_drivers() {
-    echo "Instalando drivers AMD..."
-    
+    echo -e "${GREEN}Instalando drivers AMD...${NC}"
+
     # Atualiza a lista de pacotes e atualiza o sistema
-    apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
-    
+    apt update && apt upgrade -y || { echo -e "${RED}Erro ao atualizar pacotes. Abortando.${NC}" >&2; exit 1; }
+
     # Remoção de instalações anteriores (se necessário)
-    echo "Removendo instalações anteriores do AMD..."
-    # Exemplo genérico, ajuste conforme necessário
+    echo -e "${GREEN}Removendo instalações anteriores do AMD...${NC}"
     apt purge amd* -y
-    
+
     # Instalação de pacotes necessários
-    echo "Instalando pacotes necessários..."
-    # Exemplo genérico, ajuste conforme necessário
+    echo -e "${GREEN}Instalando pacotes necessários...${NC}"
     apt install -y firmware-amd-graphics amdgpu-pro mesa-utils mesa-vdpau-drivers
-    
-    # Configurações adicionais se necessário (exemplo: kernel parameters)
-    # Exemplo genérico, ajuste conforme necessário
+
     echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX amdgpu.runpm=0"' > /etc/default/grub.d/amdgpu-options.cfg
-    
+
     update-grub
 }
+
+# Chamada da função para detectar placa de vídeo
+detect_graphics_card
 
 # Função para escolher se deseja instalar via Flatpak
 choose_flatpak_installation() {
@@ -98,25 +112,26 @@ choose_flatpak_installation() {
     done
 }
 
+###
+# REPOSITORIOS
+###
+
 # Variáveis de configuração
 LV_BRANCH='release-1.4/neovim-0.9'
 DROID_FONT_URL='https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/DroidSansMNerdFont-Regular.otf'
 JETBRAINS_FONT_URL='https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/JetBrainsMono/JetBrains%20Mono%20Nerd%20Font%20Complete.otf'
 
 # Início da mensagem de carregamento
-echo "Iniciando instalação..."
+echo -e "${GREEN}Iniciando instalação...${NC}"
 
 # Atualiza a lista de pacotes e atualiza o sistema
-apt update && apt upgrade -y || { echo "Erro ao atualizar pacotes. Abortando." >&2; exit 1; }
+apt update && apt upgrade -y || { echo -e "${RED}Erro ao atualizar pacotes. Abortando.${NC}" >&2; exit 1; }
 
-# Verifica e instala os drivers de vídeo conforme necessário
-detect_graphics_card
+# Instalação de ferramentas básicas com feedback colorido
+echo -e "${GREEN}=====================${NC}"
+echo -e "${GREEN}|       Basics      |${NC}"
+echo -e "${GREEN}=====================${NC}"
 
-echo "============"
-echo "|  Basics  |"
-echo "============"
-
-# Instala ferramentas básicas
 apt install -y \
     curl \
     wget \
@@ -127,9 +142,10 @@ apt install -y \
     ca-certificates \
     gnupg-agent
 
-echo "====================="
-echo "|  Go Lang + C/C++  |"
-echo "====================="
+# Instalação de Go Lang e C/C++ com feedback colorido
+echo -e "${GREEN}======================${NC}"
+echo -e "${GREEN}|   Go Lang + C/C++  |${NC}"
+echo -e "${GREEN}======================${NC}"
 
 apt install -y \
     build-essential \
@@ -139,18 +155,19 @@ apt install -y \
 export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
 
-echo "======================="
-echo "|  i3 + Dependencies  |"
-echo "======================="
+# Instalação do i3 e dependências com feedback colorido
+echo -e "${GREEN}======================${NC}"
+echo -e "${GREEN}|  i3 + Dependencies |${NC}"
+echo -e "${GREEN}======================${NC}"
 
-# Instalação do i3 e dependências
 apt install -y i3 i3status i3lock xbacklight feh
 
-echo "==============================="
-echo "|  NeoVim + LunarVim + Fonts  |"
-echo "==============================="
+# Instalação do Neovim, LunarVim e Fonts com feedback colorido
+echo -e "${GREEN}===============================${NC}"
+echo -e "${GREEN}|  NeoVim + LunarVim + Fonts  |${NC}"
+echo -e "${GREEN}===============================${NC}"
 
-# Instalação do Neovim e LunarVim
+# Instalação do Neovim
 curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
 chmod 755 nvim.appimage
 chown root:root nvim.appimage
@@ -169,11 +186,11 @@ cd ~/.local/share/fonts && {
 # Atualiza o cache de fontes
 fc-cache -f -v
 
-echo "====================="
-echo "|  Zsh + Oh My Zsh  |"
-echo "====================="
+# Instalação do Zsh e Oh My Zsh com feedback colorido
+echo -e "${GREEN}=====================${NC}"
+echo -e "${GREEN}|   Zsh + Oh My Zsh   |${NC}"
+echo -e "${GREEN}=====================${NC}"
 
-# Instalação do Zsh e Oh My Zsh
 apt install -y zsh curl git
 sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
@@ -185,20 +202,22 @@ apt clean
 chsh -s $(which zsh)
 
 # Fim da instalação
-echo "Instalação concluída. Por favor, faça logout e login novamente para aplicar as alterações do Zsh e Neovim."
-    while true; do
-        read -p "Recomendamos que reinicie para aplicar efeito na placa de vídeo. Deseja reiniciar? (S/N): " choice
-        case "$choice" in
-            [Ss]* )
-                reboot
-                break
-                ;;
-            [Nn]* )
-                echo "Você optou por não reiniciar."
-                break
-                ;;
-            * )
-                echo "Por favor, responda com S (Sim) ou N (Não)."
-                ;;
-        esac
-    done
+echo -e "${GREEN}Instalação concluída. Por favor, faça logout e login novamente para aplicar as alterações do Zsh e Neovim.${NC}"
+
+# Reinicialização opcional com feedback colorido
+while true; do
+    read -p "${GREEN}Recomendamos que reinicie para aplicar efeito na placa de vídeo. Deseja reiniciar? (S/N): ${NC}" choice
+    case "$choice" in
+        [Ss]* )
+            reboot
+            break
+            ;;
+        [Nn]* )
+            echo -e "${YELLOW}Você optou por não reiniciar.${NC}"
+            break
+            ;;
+        * )
+            echo -e "${YELLOW}Por favor, responda com S (Sim) ou N (Não).${NC}"
+            ;;
+    esac
+done
