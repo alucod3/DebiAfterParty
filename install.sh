@@ -13,6 +13,19 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Função para ativar os repositórios non-free no Debian
+enable_nonfree_repos() {
+    echo "${GREEN}Ativando repositórios non-free...${NC}"
+
+    # Adiciona os repositórios non-free ao arquivo sources.list
+    echo "" >> /etc/apt/sources.list
+    echo "# Repositórios non-free" >> /etc/apt/sources.list
+    echo "deb http://deb.debian.org/debian/ $(lsb_release -cs) main non-free contrib" >> /etc/apt/sources.list
+    echo "deb-src http://deb.debian.org/debian/ $(lsb_release -cs) main non-free contrib" >> /etc/apt/sources.list
+
+    echo "${GREEN}Repositórios ativados com sucesso!${NC}"
+}
+
 # Função para imprimir ASCII art colorido
 print_ascii_art() {
     echo -e "${CYAN}"
@@ -186,10 +199,10 @@ cd ~/.local/share/fonts && {
 # Atualiza o cache de fontes
 fc-cache -f -v
 
-# Instalação do Zsh e Oh My Zsh com feedback colorido
-echo -e "${GREEN}=====================${NC}"
+# Instalação do Zsh e Oh My Zsh
+echo -e "${GREEN}=======================${NC}"
 echo -e "${GREEN}|   Zsh + Oh My Zsh   |${NC}"
-echo -e "${GREEN}=====================${NC}"
+echo -e "${GREEN}=======================${NC}"
 
 apt install -y zsh curl git
 sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
